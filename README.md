@@ -101,7 +101,8 @@ Confidence score
 
 ### **📌 Example Predictions**
 
-![Prediction Example](C:\Users\mesas\OneDrive\Pictures\Screenshots\Screenshot 2025-11-21 205328.png)
+![Prediction Example]<img width="1804" height="628" alt="Screenshot 2025-11-21 205328" src="https://github.com/user-attachments/assets/2d5e87a6-473a-4070-a28f-7292f09821c6" />
+
 
 ### **🛠️ Future Improvements**
 
