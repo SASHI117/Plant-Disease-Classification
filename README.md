@@ -101,7 +101,10 @@ Confidence score
 
 ### **📌 Example Predictions**
 
-![Prediction Example]<img width="1804" height="628" alt="Screenshot 2025-11-21 205328" src="https://github.com/user-attachments/assets/2d5e87a6-473a-4070-a28f-7292f09821c6" />
+<img width="1804" height="628" alt="Screenshot 2025-11-21 205328" src="https://github.com/user-attachments/assets/2d5e87a6-473a-4070-a28f-7292f09821c6" />
+<img width="1801" height="660" alt="Screenshot 2025-11-21 205432" src="https://github.com/user-attachments/assets/923a2d68-6b55-4347-8910-f645be821fc5" />
+<img width="1783" height="640" alt="Screenshot 2025-11-21 205926" src="https://github.com/user-attachments/assets/1d4af7bd-8a24-4d1c-966c-68807c8e7345" />
+<img width="1788" height="625" alt="Screenshot 2025-11-21 205256" src="https://github.com/user-attachments/assets/c6104d3e-7998-41a1-9de5-7f63b0ce4eb2" />
 
 
 ### **🛠️ Future Improvements**
