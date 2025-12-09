@@ -76,3 +76,55 @@ Run locally:
 ```python
 import gradio as gr
 interface.launch()
+```
+Here is the exact section you asked for, rewritten cleanly and formatted in README markdown hash (#) format and wrapped inside a code block so you can paste it directly into GitHub.
+
+## ▶️ How to Run
+
+### **1. Install dependencies**
+```bash
+pip install tensorflow keras gradio numpy
+```
+### **2. Run the Gradio app**
+```bash
+python app.py
+```
+### **4. Upload a leaf image**
+
+Once the app opens in your browser, upload a plant leaf image.
+
+The model will return:
+
+Predicted class
+
+Confidence score
+
+### **📌 Example Predictions**
+
+![Prediction Example](C:\Users\mesas\OneDrive\Pictures\Screenshots\Screenshot 2025-11-21 205328.png)
+
+### **🛠️ Future Improvements**
+
+Convert the model to TensorFlow Lite for mobile deployment
+
+Add Grad-CAM heatmaps for model explainability
+
+Implement multi-image batch prediction
+
+Deploy a live version on Hugging Face Spaces
+
+Add treatment suggestions for each detected disease
+
+### **📄 License**
+
+This project is licensed under the MIT License.
+
+### **🙌 Acknowledgements**
+
+PlantVillage Dataset (Kaggle)
+
+MobileNetV2 Architecture (Google Research)
+
+TensorFlow/Keras
+
+Gradio Interface
