@@ -1,0 +1,6 @@
+tensorflow>=2.16      # Keras 3; use tensorflow-cpu on machines without a GPU
+numpy
+pillow
+gradio>=5
+scikit-learn          # evaluate.py
+matplotlib            # evaluate.py
