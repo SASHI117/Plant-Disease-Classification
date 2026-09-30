@@ -68,10 +68,9 @@ minutes for the 7 epochs in the notebook log) and classifies a leaf in about
 
 ## How well does it actually work?
 
-The 94.3% comes from a random split of one Kaggle copy. PlantVillage has
-several photos per physical leaf, all shot in the same lab setup, so a
-random split puts near-identical images on both sides and flatters the
-score. To check this, `scripts/fetch_plantvillage_sample.py` draws 10 images
+The 94.3% comes from a random split of one Kaggle copy. PlantVillage images
+were all shot in one uniform, lab-style setup, so a random split puts very
+similar images on both sides and tends to flatter the score. To check this, `scripts/fetch_plantvillage_sample.py` draws 10 images
 per class from the **original PlantVillage release**
 ([spMohanty/PlantVillage-Dataset](https://github.com/spMohanty/PlantVillage-Dataset)),
 and `evaluate.py` scores them with the same loader used in training:
@@ -80,23 +79,27 @@ and `evaluate.py` scores them with the same loader used in training:
 
 - **78.7% accuracy on the same 15 classes, from the same source dataset.**
   Even images whose IDs the Colab run listed in its own validation split
-  scored 15 of 19 here, which points to the Kaggle files having been
-  re-encoded or processed. The model has learned something specific to that
-  copy.
-- **Septoria leaf spot is a sink class.** It absorbs 70% of tomato Bacterial
-  spot and 20% of Early blight and Leaf Mold. All of these are small dark
-  lesions, the hardest visual distinction in the set.
-- **Virus and blight pairs get confused:** Yellow Leaf Curl vs Mosaic
-  (30%), potato Late vs Early blight.
-- Late blight and all "healthy" classes are recognized reliably.
+  scored 15 of 19 here. That suggests the Kaggle files differ from the
+  originals (for example, re-encoded), so the model has partly learned
+  something specific to that copy. I haven't confirmed this against the
+  Kaggle files themselves.
+- **Two sink classes.** Septoria leaf spot absorbs 70% of tomato Bacterial
+  spot and 20% each of Early blight and Leaf Mold, so its recall is 100% but
+  its precision only 0.43. Mosaic virus does the same to 30% of Yellow Leaf
+  Curl (precision 0.59). The spotted-lesion diseases look alike at 160 px.
+- **Weakest classes:** tomato Bacterial spot (recall 0.20) and tomato Early
+  blight (0.30).
+- **Potato:** Late blight is called Healthy 20% of the time, and Early
+  blight is called Late 10% of the time.
+- **Reliable:** tomato Late blight, tomato Healthy and the spider mite class
+  have recall of at least 0.90 and precision of at least 0.91.
 
 With n = 10 per class, each per-class number has a wide interval (about ±25
 points at 95%). The overall pattern is clear, but the individual cells aren't
 precise. Full metrics are in
 [`docs/pv_sample/metrics.json`](docs/pv_sample/metrics.json).
 
-**What would move it:** train on the original release rather than a
-re-encoded copy; group the split by leaf so near-duplicates can't straddle
+**What would move it:** train and evaluate on the original release; group the split by leaf so near-duplicates can't straddle
 train and validation; use MobileNetV2's own `preprocess_input` (scale to
 [-1, 1]) instead of `/255`; and add stronger colour/blur augmentation.
 Field photos (cluttered backgrounds, several leaves, variable light) will be
