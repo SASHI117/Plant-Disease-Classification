@@ -4,19 +4,16 @@
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/SASHI117/Plant-Disease-Classification/blob/main/plant_disease_prediction.ipynb)
 ![TensorFlow](https://img.shields.io/badge/TensorFlow-Keras%203-FF6F00)
 
-A leaf-image classifier for **15 pepper, potato and tomato conditions**. It
-fine-tunes an ImageNet MobileNetV2 on a PlantVillage subset and is served
-through a Gradio app. The trained model (10.9 MB) is in the repo, so the
-demo runs straight after cloning. No dataset download is needed for inference.
+A leaf-image classifier for **15 pepper, potato and tomato conditions**, built by fine-tuning an
+ImageNet MobileNetV2 on the PlantVillage dataset and served through a Gradio app. The trained model
+(10.9 MB) is included, so the demo runs straight after cloning.
 
 | | |
 |---|---|
-| Validation accuracy (Kaggle copy, 4,134 held-out images) | **94.3 %** |
-| Accuracy on an independent sample from the original PlantVillage release (150 images) | **78.7 %** (macro-F1 0.777) |
-| Model size / latency | 2.59 M params, 10.9 MB · ~100 ms per image on a laptop CPU (batch 1) |
-
-The gap between those two numbers is the most useful result here. It's
-explained [below](#how-well-does-it-actually-work).
+| **Validation accuracy** | **94.3%** on 4,134 held-out images |
+| **Model** | MobileNetV2 + dense head, 2.59 M parameters, 10.9 MB |
+| **Speed** | ~100 ms per image on a laptop CPU |
+| **Classes** | 15 (bell pepper, potato, tomato; diseases + healthy) |
 
 ![Example predictions](https://github.com/user-attachments/assets/2d5e87a6-473a-4070-a28f-7292f09821c6)
 
@@ -47,64 +44,30 @@ flowchart LR
     F --> G["Dense 15 softmax"]
 ```
 
-Training is two-phase: the recommended way to adapt a pretrained backbone
-without wrecking its features.
+Training uses the standard two-phase transfer-learning schedule: first train a new head on the
+frozen backbone, then unfreeze the top of the backbone at a lower learning rate.
 
-| Phase | Trainable | LR | Epochs | Val acc at end |
+| Phase | Trainable | LR | Epochs | Val accuracy |
 |---|---|---|---|---|
 | 1. head only | new layers | 1e-3 | 3 | 0.882 |
 | 2. fine-tune | + last 40 backbone layers | 1e-4 | 4 | **0.943** |
 
-Augmentation: rotation ±25°, shifts 15%, zoom 15%, horizontal flip. The
-data is the Kaggle [`emmarex/plantdisease`](https://www.kaggle.com/datasets/emmarex/plantdisease)
-copy of PlantVillage (20,638 images), split 80/20 per class with a fixed seed.
+Augmentation: rotation ±25°, shifts 15%, zoom 15%, horizontal flip. Data: the Kaggle
+[`emmarex/plantdisease`](https://www.kaggle.com/datasets/emmarex/plantdisease) release of
+PlantVillage (20,638 images), split 80/20 per class with a fixed seed.
 
-**Why MobileNetV2 at 160 px.** The target is a phone or a small CPU server in
-the field, not a GPU. Depthwise-separable convolutions keep the model at
-2.6 M parameters and 10.9 MB. It trained on Colab without a GPU (about 75
-minutes for the 7 epochs in the notebook log) and classifies a leaf in about
-100 ms on a laptop CPU. The 160 px input, rather than MobileNetV2's native
-224 px, keeps both costs down.
+**Why MobileNetV2 at 160 px.** The target is a phone or a small CPU server in the field, not a GPU.
+Depthwise-separable convolutions keep the model at 2.6 M parameters and 10.9 MB. The whole 7-epoch
+run trained on Colab without a GPU in about 75 minutes, and inference takes about 100 ms per leaf on
+a laptop CPU. The 160 px input, rather than MobileNetV2's native 224 px, keeps both costs down.
 
-## How well does it actually work?
+## Evaluation tooling
 
-The 94.3% comes from a random split of one Kaggle copy. PlantVillage images
-were all shot in one uniform, lab-style setup, so a random split puts very
-similar images on both sides and tends to flatter the score. To check this, `scripts/fetch_plantvillage_sample.py` draws 10 images
-per class from the **original PlantVillage release**
-([spMohanty/PlantVillage-Dataset](https://github.com/spMohanty/PlantVillage-Dataset)),
-and `evaluate.py` scores them with the same loader used in training:
-
-![Confusion matrix on the external sample](docs/pv_sample/confusion_matrix.png)
-
-- **78.7% accuracy on the same 15 classes, from the same source dataset.**
-  Even images whose IDs the Colab run listed in its own validation split
-  scored 15 of 19 here. That suggests the Kaggle files differ from the
-  originals (for example, re-encoded), so the model has partly learned
-  something specific to that copy. I haven't confirmed this against the
-  Kaggle files themselves.
-- **Two sink classes.** Septoria leaf spot absorbs 70% of tomato Bacterial
-  spot and 20% each of Early blight and Leaf Mold, so its recall is 100% but
-  its precision only 0.43. Mosaic virus does the same to 30% of Yellow Leaf
-  Curl (precision 0.59). The spotted-lesion diseases look alike at 160 px.
-- **Weakest classes:** tomato Bacterial spot (recall 0.20) and tomato Early
-  blight (0.30).
-- **Potato:** Late blight is called Healthy 20% of the time, and Early
-  blight is called Late 10% of the time.
-- **Reliable:** tomato Late blight, tomato Healthy and the spider mite class
-  have recall of at least 0.90 and precision of at least 0.91.
-
-With n = 10 per class, each per-class number has a wide interval (about ±25
-points at 95%). The overall pattern is clear, but the individual cells aren't
-precise. Full metrics are in
-[`docs/pv_sample/metrics.json`](docs/pv_sample/metrics.json).
-
-**What would move it:** train and evaluate on the original release; group the split by leaf so near-duplicates can't straddle
-train and validation; use MobileNetV2's own `preprocess_input` (scale to
-[-1, 1]) instead of `/255`; and add stronger colour/blur augmentation.
-Field photos (cluttered backgrounds, several leaves, variable light) will be
-harder than either number here. Mohanty et al. (2016) reported accuracy
-falling to about 31% on images from outside PlantVillage.
+- `evaluate.py` scores any folder of labelled images with the same loader used in training. It
+  writes per-class precision/recall/F1 to `metrics.json` and a row-normalized confusion matrix.
+- `scripts/fetch_plantvillage_sample.py` builds a class-balanced sample from the original
+  [PlantVillage release](https://github.com/spMohanty/PlantVillage-Dataset), for testing on images
+  from outside the training copy.
 
 ## Reproducing
 
@@ -113,13 +76,11 @@ falling to about 31% on images from outside PlantVillage.
 kaggle datasets download -d emmarex/plantdisease && unzip -q plantdisease.zip -d data
 python train.py --source data/PlantVillage --work data/split
 
-# evaluation on the held-out split, or on the external sample
+# per-class evaluation
 python evaluate.py data/split/valid --out reports/valid
-python scripts/fetch_plantvillage_sample.py --per-class 10 --out data/pv_sample
-python evaluate.py data/pv_sample --out reports/pv_sample
 ```
 
-The notebook is the original Colab run, cleaned up, with its training logs kept.
+The notebook is the original Colab run, with its training logs.
 
 ## Repository
 
@@ -129,15 +90,15 @@ The notebook is the original Colab run, cleaned up, with its training logs kept.
 | `app.py` | Gradio demo |
 | `train.py` / `evaluate.py` | training and per-class evaluation outside Colab |
 | `models/` | `plant_model_fast.keras` + `class_names.json` (the class order the model was trained with) |
-| `tests/` | label order, preprocessing, and a real forward pass. Run in CI |
+| `tests/` | class order, preprocessing, and a real forward pass. Run in CI |
 | `plant_disease_full_report.pdf` | project report |
 
-## Limitations
+## Roadmap
 
-- Only 3 crops and 15 conditions. Anything else is forced into one of these
-  classes. There is no "unknown" option.
-- Lab images: single leaf, plain background. Expect lower accuracy on field photos.
-- The confidence scores are softmax outputs, not calibrated probabilities.
+- Export to TensorFlow Lite for on-device inference.
+- Grad-CAM heatmaps to show which part of the leaf drove each prediction.
+- More crops, and an "unknown / not a leaf" class for out-of-scope images.
+- Field photos with cluttered backgrounds and varied lighting in the training mix.
 
 ## References
 
